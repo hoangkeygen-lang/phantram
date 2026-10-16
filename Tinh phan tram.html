@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Máy Tính Phần Trăm Đa Năng (16 Chức Năng)</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --success: #34a853;
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #202124;
+            --border: #dadce0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        @media (min-width: 768px) {
+            .container { flex-direction: row; }
+        }
+        .sidebar {
+            flex: 1;
+            background: #f8f9fa;
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+        .content {
+            flex: 2;
+            padding: 30px;
+        }
+        h2, h3 { margin-top: 0; color: var(--primary); }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        .menu-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .menu-btn:hover { border-color: var(--primary); }
+        .menu-btn.active {
+            background: #e8f0fe;
+            border-color: var(--primary);
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+        .input-group input {
+            width: 100%; padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px; font-size: 16px;
+            box-sizing: border-box; transition: 0.2s;
+        }
+        .input-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,115,232,0.2); }
+        
+        .result-box {
+            background: #e6f4ea; border-left: 5px solid var(--success);
+            padding: 20px; border-radius: 8px; margin-top: 30px;
+            display: none;
+        }
+        .result-title { font-size: 14px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+        .result-value { font-size: 32px; font-weight: bold; color: var(--success); margin: 10px 0; }
+        .detail-line { margin: 8px 0; font-size: 15px; }
+        
+        .actions { display: flex; gap: 10px; margin-top: 20px; }
+        button.action-btn {
+            flex: 1; padding: 12px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+        .btn-copy { background: var(--primary); color: white; }
+        .btn-clear { background: #e0e0e0; color: #333; }
+        
+        .info-note { font-size: 13px; color: #666; margin-top: -10px; margin-bottom: 15px; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar">
+        <h3>Menu Chức Năng</h3>
+        <div class="menu-grid" id="menu-container">
+            <!-- Rendered via JS -->
+        </div>
+    </div>
+
+    <div class="content">
+        <h2 id="current-title">1. A chiếm bao nhiêu % của B</h2>
+        
+        <div class="input-area">
+            <div class="input-group" id="group-A">
+                <label id="label-A">Giá trị A</label>
+                <input type="text" id="input-A" oninput="formatAndCalc(this)" placeholder="0">
+            </div>
+            <div class="input-group" id="group-B">
+                <label id="label-B">Giá trị B</label>
+                <input type="text" id="input-B" oninput="formatAndCalc(this)" placeholder="0">
+                <div class="info-note" id="note-B" style="display:none;"></div>
+            </div>
+            <div class="input-group" id="group-C" style="display:none;">
+                <label id="label-C">Giá trị C</label>
+                <input type="text" id="input-C" oninput="formatAndCalc(this)" placeholder="0">
+            </div>
+        </div>
+
+        <div class="result-box" id="result-box">
+            <div class="result-title">Kết quả</div>
+            <div class="result-value" id="final-result">0</div>
+            <div class="detail-line"><strong>Công thức:</strong> <span id="formula"></span></div>
+            <div class="detail-line"><strong>Giải thích:</strong> <span id="explanation"></span></div>
+        </div>
+
+        <div class="actions">
+            <button class="action-btn btn-copy" onclick="copyResult()">📋 Sao chép</button>
+            <button class="action-btn btn-clear" onclick="clearInputs()">🔄 Làm mới</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Định nghĩa cấu hình 16 chức năng
+    const funcs = [
+        { id: 1, name: "1. A chiếm bao nhiêu % của B", a: "Giá trị A", b: "Giá trị B (Tổng)" },
+        { id: 2, name: "2. Tính X% của một số", a: "Số phần trăm (%)", b: "Giá trị gốc" },
+        { id: 3, name: "3. Tăng X%", a: "Giá trị ban đầu", b: "Phần trăm tăng (%)" },
+        { id: 4, name: "4. Giảm X%", a: "Giá trị ban đầu", b: "Phần trăm giảm (%)" },
+        { id: 5, name: "5. % Tăng trưởng", a: "Giá trị Cũ", b: "Giá trị Mới" },
+        { id: 6, name: "6. % Giảm", a: "Giá trị Cũ", b: "Giá trị Mới" },
+        { id: 7, name: "7. % Hoàn thành mục tiêu", a: "Thực tế đạt được", b: "Mục tiêu đề ra" },
+        { id: 8, name: "8. % Còn lại", a: "Phần trăm đã sử dụng (%)", b: null }, // b=null -> Ẩn ô B
+        { id: 9, name: "9. Tỷ lệ A/B", a: "Giá trị A", b: "Giá trị B" },
+        { id: 10, name: "10. Tính ngược giá gốc", a: "Giá trị sau thay đổi", b: "Phần trăm thay đổi", noteB: "(Nhập số dương nếu tăng, số âm nếu giảm. VD: -20)" },
+        { id: 11, name: "11. Tính % chiết khấu", a: "Số tiền được giảm", b: "Giá gốc ban đầu" },
+        { id: 12, name: "12. Tính hoa hồng", a: "Doanh thu", b: "Tỷ lệ hoa hồng (%)" },
+        { id: 13, name: "13. Tính thuế", a: "Giá trị tính thuế", b: "Thuế suất (%)" },
+        { id: 14, name: "14. Tỷ lệ đạt/không đạt", a: "Số người/lượng Đạt", b: "Tổng số lượng" },
+        { id: 15, name: "15. Tỷ lệ phân bổ", a: "Giá trị thành phần", b: "Tổng toàn bộ" },
+        { id: 16, name: "16. Tăng/giảm liên tiếp", a: "Giá trị gốc", b: "Thay đổi lần 1 (%)", c: "Thay đổi lần 2 (%)" }
+    ];
+
+    let currentModeId = 1;
+
+    // Khởi tạo Menu
+    function initMenu() {
+        const menuContainer = document.getElementById('menu-container');
+        funcs.forEach(f => {
+            const btn = document.createElement('button');
+            btn.className = `menu-btn ${f.id === currentModeId ? 'active' : ''}`;
+            btn.innerText = f.name;
+            btn.onclick = () => selectMode(f.id, btn);
+            menuContainer.appendChild(btn);
+        });
+    }
+
+    // Xử lý chọn chức năng
+    function selectMode(id, btnElement) {
+        currentModeId = id;
+        
+        // Update UI Menu
+        document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+        if(btnElement) btnElement.classList.add('active');
+
+        // Update Labels & Inputs
+        const config = funcs.find(f => f.id === id);
+        document.getElementById('current-title').innerText = config.name;
+        
+        document.getElementById('label-A').innerText = config.a;
+        document.getElementById('input-A').value = '';
+        
+        if (config.b) {
+            document.getElementById('group-B').style.display = 'block';
+            document.getElementById('label-B').innerText = config.b;
+            document.getElementById('input-B').value = '';
+            
+            if(config.noteB) {
+                document.getElementById('note-B').innerText = config.noteB;
+                document.getElementById('note-B').style.display = 'block';
+            } else {
+                document.getElementById('note-B').style.display = 'none';
+            }
+        } else {
+            document.getElementById('group-B').style.display = 'none';
+        }
+
+        if (config.c) {
+            document.getElementById('group-C').style.display = 'block';
+            document.getElementById('label-C').innerText = config.c;
+            document.getElementById('input-C').value = '';
+        } else {
+            document.getElementById('group-C').style.display = 'none';
+        }
+
+        document.getElementById('result-box').style.display = 'none';
+    }
+
+    // Định dạng số có dấu phẩy hàng nghìn
+    function formatAndCalc(input) {
+        // Cho phép nhập dấu âm cho chức năng 10 và 16
+        let val = input.value.replace(/,/g, '');
+        // Chỉ giữ lại số, dấu chấm và dấu trừ ở đầu
+        val = val.replace(/(?!^-)[^0-9.]/g, ''); 
+        
+        if (val !== '' && val !== '-') {
+            let parts = val.split('.');
+            if (parts[0] !== '') {
+                parts[0] = parseInt(parts[0], 10).toLocaleString('en-US');
+            }
+            input.value = parts.join('.');
+        } else {
+            input.value = val;
+        }
+        calculate();
+    }
+
+    function getVal(id) {
+        const val = document.getElementById(id).value.replace(/,/g, '');
+        return parseFloat(val);
+    }
+    function fmt(num) {
+        return num.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    }
+
+    // Xử lý logic tính toán trung tâm
+    function calculate() {
+        const a = getVal('input-A');
+        const b = getVal('input-B');
+        const c = getVal('input-C');
+        const rb = document.getElementById('result-box');
+        
+        // Validation check
+        const cfg = funcs.find(f => f.id === currentModeId);
+        let isValid = !isNaN(a);
+        if (cfg.b && isNaN(b)) isValid = false;
+        if (cfg.c && isNaN(c)) isValid = false;
+        
+        if (!isValid) {
+            rb.style.display = 'none';
+            return;
+        }
+
+        let res = '', form = '', exp = '';
+
+        try {
+            switch(currentModeId) {
+                case 1: case 7: case 9: case 14: case 15:
+                    // (A/B)*100
+                    if(b === 0) throw "Không thể chia cho 0";
+                    let p1 = (a / b) * 100;
+                    res = fmt(p1) + '%';
+                    form = `${fmt(a)} ÷ ${fmt(b)} × 100 = ${res}`;
+                    exp = `${fmt(a)} tương đương ${res} của ${fmt(b)}.`;
+                    if(currentModeId === 14) exp = `Tỷ lệ đạt là ${res}, tương đương ${fmt(100-p1)}% không đạt.`;
+                    break;
+                case 2: case 12: case 13:
+                    // (A*B)/100
+                    let val2 = (a * b) / 100;
+                    res = fmt(val2);
+                    form = `${fmt(b)} × ${fmt(a)}% = ${res}`;
+                    exp = `${fmt(a)}% của ${fmt(b)} là ${res}.`;
+                    break;
+                case 3:
+                    // Tăng X%
+                    let increased = a * (1 + b/100);
+                    res = fmt(increased);
+                    form = `${fmt(a)} × (1 + ${fmt(b)}/100) = ${res}`;
+                    exp = `Giá trị sau khi tăng thêm ${fmt(b)}% (tức là tăng ${fmt(increased - a)}) là ${res}.`;
+                    break;
+                case 4:
+                    // Giảm X%
+                    let decreased = a * (1 - b/100);
+                    res = fmt(decreased);
+                    form = `${fmt(a)} × (1 - ${fmt(b)}/100) = ${res}`;
+                    exp = `Giá trị sau khi giảm đi ${fmt(b)}% (tức là giảm ${fmt(a - decreased)}) là ${res}.`;
+                    break;
+                case 5:
+                    // % Tăng trưởng
+                    if(a === 0) throw "Giá trị cũ không thể bằng 0";
+                    let growth = ((b - a) / a) * 100;
+                    res = fmt(growth) + '%';
+                    form = `(${fmt(b)} - ${fmt(a)}) ÷ ${fmt(a)} × 100 = ${res}`;
+                    exp = growth >= 0 ? `Tăng trưởng ${res} so với ban đầu.` : `Suy giảm ${fmt(Math.abs(growth))}% so với ban đầu.`;
+                    break;
+                case 6:
+                    // % Giảm
+                    if(a === 0) throw "Giá trị cũ không thể bằng 0";
+                    let drop = ((a - b) / a) * 100;
+                    res = fmt(drop) + '%';
+                    form = `(${fmt(a)} - ${fmt(b)}) ÷ ${fmt(a)} × 100 = ${res}`;
+                    exp = drop >= 0 ? `Đã giảm đi ${res} so với ban đầu.` : `Thực tế đã tăng ${fmt(Math.abs(drop))}%.`;
+                    break;
+                case 8:
+                    // % Còn lại
+                    res = fmt(100 - a) + '%';
+                    form = `100% - ${fmt(a)}% = ${res}`;
+                    exp = `Đã sử dụng ${fmt(a)}%, hiện còn lại ${res}.`;
+                    break;
+                case 10:
+                    // Tính ngược giá gốc
+                    let p10 = b / 100;
+                    let original = a / (1 + p10);
+                    res = fmt(original);
+                    form = `${fmt(a)} ÷ (1 ${p10 >= 0 ? '+' : ''} ${p10}) = ${res}`;
+                    exp = `Trước khi thay đổi ${fmt(b)}%, giá trị gốc là ${res}.`;
+                    break;
+                case 11:
+                    // Tính % chiết khấu (Tiền giảm / Giá gốc)
+                    if(b === 0) throw "Giá gốc không thể bằng 0";
+                    let disc = (a / b) * 100;
+                    res = fmt(disc) + '%';
+                    form = `${fmt(a)} ÷ ${fmt(b)} × 100 = ${res}`;
+                    exp = `Bạn được giảm giá ${res} trên tổng số tiền. Giá sau chiết khấu là ${fmt(b - a)}.`;
+                    break;
+                case 16:
+                    // Thay đổi liên tiếp
+                    let step1 = a * (1 + b/100);
+                    let step2 = step1 * (1 + c/100);
+                    res = fmt(step2);
+                    let totalChange = ((step2 - a) / a) * 100;
+                    form = `${fmt(a)} × (1 ${b>=0?'+':''}${fmt(b)}%) × (1 ${c>=0?'+':''}${fmt(c)}%) = ${res}`;
+                    exp = `Lần 1 thành: ${fmt(step1)}. Lần 2 thành: ${res}. Tổng tỷ lệ thay đổi thực tế so với ban đầu là ${fmt(totalChange)}%.`;
+                    break;
+            }
+
+            document.getElementById('final-result').innerText = res;
+            document.getElementById('formula').innerText = form;
+            document.getElementById('explanation').innerText = exp;
+            rb.style.display = 'block';
+
+        } catch (error) {
+            document.getElementById('final-result').innerText = "Lỗi";
+            document.getElementById('formula').innerText = "N/A";
+            document.getElementById('explanation').innerText = error;
+            rb.style.display = 'block';
+        }
+    }
+
+    function clearInputs() {
+        document.getElementById('input-A').value = '';
+        if(document.getElementById('input-B')) document.getElementById('input-B').value = '';
+        if(document.getElementById('input-C')) document.getElementById('input-C').value = '';
+        document.getElementById('result-box').style.display = 'none';
+    }
+
+    function copyResult() {
+        const title = document.getElementById('current-title').innerText;
+        const res = document.getElementById('final-result').innerText;
+        const form = document.getElementById('formula').innerText;
+        const exp = document.getElementById('explanation').innerText;
+        const textToCopy = `--- ${title} ---\nKết quả: ${res}\nCông thức: ${form}\nGiải thích: ${exp}`;
+        
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            alert("Đã sao chép kết quả!");
+        });
+    }
+
+    // Khởi động
+    initMenu();
+    selectMode(1);
+</script>
+
+</body>
+</html>
